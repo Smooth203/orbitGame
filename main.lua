@@ -9,8 +9,6 @@ function newObject(name, parent, semiMajorAxis, eccentricity)
 	_, _, mass, _ = object.shape:computeMass(1)
 	object.body:setMass(mass)
 
-	print(parent.body:getY()+(semiMajorAxis-eccentricity))
-
 	object.body:setPosition(parent.body:getX(), parent.body:getY()+(semiMajorAxis-eccentricity))
 
 	objects[name] = object
@@ -21,7 +19,7 @@ function love.load()
 	world = love.physics.newWorld(0, 0, true)
 
 	--gravity
-	G = 1
+	G = 9.45
 
 
 	objects = {}
@@ -41,11 +39,15 @@ function love.load()
 	objects.sun.body:setMass(mass)
 	objects.sun.body:setPosition(0, 0)
 
-	GG = (29780^2)/(25000 * objects.sun.body:getMass())
+	xAp, yAp, xPe, yPe = 0,0,0,0
+	ap, pe = 0, 0
+	GG = (1000^2)/(25000 * objects.sun.body:getMass())
 	print(GG)
 	newObject('planet', objects.sun, 25000 , 0)
 
-	objects.planet.body:setLinearVelocity(400,0)
+
+
+	objects.planet.body:setLinearVelocity(1000,0)
 	--objects.planet.body:applyLinearImpulse(5000, 0)
 	--world:translateOrigin(-(love.graphics.getWidth()/2)/scale, (objects.planet.body:getY())-(love.graphics.getHeight()/2)/scale)
 	world:translateOrigin(-(love.graphics.getWidth()/2)/scale,-(love.graphics.getHeight()/2)/scale)
@@ -60,6 +62,18 @@ function love.update(dt)
 	angle = math.atan2( objects.sun.body:getY()-objects.planet.body:getY(), objects.sun.body:getX()-objects.planet.body:getX() )
 	force = (G * objects.sun.body:getMass() * objects.planet.body:getMass()) / (dist)
 	objects.planet.body:applyForce(force*math.cos(angle), force*math.sin(angle))
+
+	if dist > ap then
+		ap = dist
+		xAp, yAp = objects.planet.body:getPosition()
+
+		pe = ap
+	end
+	if (dist < ap) then
+		pe = dist
+		xPe, yPe = objects.planet.body:getPosition()
+	end
+		print(ap, pe)
 
 	vx, vy = objects.planet.body:getLinearVelocity()
 	v = math.sqrt(vx^2 + vy^2)
@@ -95,8 +109,12 @@ function love.draw()
 
 	love.graphics.setColor(1,1,1,1)
 
-	love.graphics.ellipse('line', (love.graphics.getWidth()/2),(love.graphics.getHeight()/2), 25000*scale, 25000*scale)
-	love.graphics.line((love.graphics.getWidth()/2),(love.graphics.getHeight()/2), objects.planet.body:getX()*scale, objects.planet.body:getY()*scale)
+	love.graphics.ellipse('line', objects.sun.body:getX()*scale, objects.sun.body:getY()*scale, 25000*scale, 25000*scale)
+	love.graphics.line( objects.sun.body:getX()*scale, objects.sun.body:getY()*scale, objects.planet.body:getX()*scale, objects.planet.body:getY()*scale)
+
+	--ap and pe mapping
+	love.graphics.line(objects.sun.body:getX()*scale, objects.sun.body:getY()*scale, xAp*scale, yAp*scale)
+	love.graphics.line(objects.sun.body:getX()*scale, objects.sun.body:getY()*scale, xPe*scale, yPe*scale)
 
 	love.graphics.print( "Mass:"..objects.planet.body:getMass().. "kg,\nAltitude: "..math.floor(dist).."m,\n".."Velocity: "..math.floor(v)..'m/s,\n'.."Grav. Force: "..(force).."N", objects.planet.body:getX()*scale, objects.planet.body:getY()*scale)
 	love.graphics.print( "Sun"..",\nMass:"..objects.sun.body:getMass(), objects.sun.body:getX()*scale, objects.sun.body:getY()*scale)
